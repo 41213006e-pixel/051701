@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫學健康大富翁</title>
+    <style>
+        :root {
+            --primary: #2bc0a4;
+            --primary-hover: #229982;
+            --danger: #ff5e62;
+            --hospital: #9b51e0;
+            --chance: #2f80ed;
+            --shop: #27ae60;
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #e8f5e9 100%);
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        /* 遊戲規則引導畫面 (Welcome/Rules Screen) */
+        #welcome-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            max-width: 550px;
+            width: 90%;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+
+        .rule-page {
+            display: none;
+            min-height: 250px;
+        }
+
+        .rule-page.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .rule-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .rule-title {
+            font-size: 1.5rem;
+            color: #0f172a;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .rule-content {
+            font-size: 1.1rem;
+            color: #475569;
+            line-height: 1.8;
+            text-align: left;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        /* 核心按鈕樣式 */
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(43, 192, 164, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(43, 192, 164, 0.3);
+        }
+
+        button:disabled {
+            background: #cbd5e1;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            box-shadow: 0 4px 6px rgba(100, 116, 139, 0.2);
+        }
+        .btn-secondary:hover {
+            background: #475569;
+            box-shadow: 0 6px 12px rgba(100, 116, 139, 0.3);
+        }
+
+        /* 遊戲主要控制面板 */
+        #control-panel {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            text-align: center;
+            width: 100%;
+            max-width: 650px;
+        }
+
+        #current-turn-display {
+            font-size: 1.4rem;
+            margin-top: 0;
+            color: #1e293b;
+        }
+
+        /* 玩家狀態欄 */
+        #players-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-card {
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            min-width: 110px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .status-card.active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        /* 棋盤樣式 - 5x5 Grid 16格 */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(5, 110px);
+            grid-template-rows: repeat(5, 110px);
+            gap: 8px;
+            background-color: #f1f5f9;
+            padding: 12px;
+            border-radius: 20px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            background-color: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-sizing: border-box;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .center-space {
+            grid-column: 2 / 5;
+            grid-row: 2 / 5;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+            border: 2px dashed var(--primary);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: #166534;
+            text-align: center;
+        }
+
+        /* 特修格子美化 */
+        .cell-start { background-color: #fef08a; border-color: #facc15; color: #854d0e; }
+        .cell-hospital { background-color: #f3e8ff; border-color: #c084fc; color: #6b21a8; }
+        .cell-chance { background-color: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
+        .cell-shop { background-color: #dcfce7; border-color: #86efac; color: #166534; }
+
+        /* 棋子設計 */
+        .tokens-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            justify-content: center;
+            width: 100%;
+            min-height: 22px;
+        }
+
+        .token {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            color: white;
+            font-size: 0.75rem;
+            text-align: center;
+            line-height: 22px;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+            border: 2px solid white;
+            animation: pop 0.3s ease;
+        }
+
+        /* 彈窗樣式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            text-align: center;
+            animation: scaleUp 0.3s ease;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #f8fafc;
+            color: #334155;
+            text-align: left;
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            font-size: 1rem;
+            box-shadow: none;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+            transform: translateX(4px);
+            box-shadow: none;
+        }
+
+        /* 動態特效 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pop { from { transform: scale(0.5); } to { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <h1>🏥 醫學健康大富翁</h1>
+
+    <!-- 遊戲規則引導畫面 (歡迎、導覽與人數選擇) -->
+    <div id="welcome-container">
+        <!-- 第一頁 -->
+        <div id="page-1" class="rule-page active">
+            <div class="rule-icon">🎲</div>
+            <div class="rule-title">遊戲核心機制</div>
+            <div class="rule-content">
+                歡迎來到健康大富翁！<br>
+                1. 輪到玩家時，按下按鈕擲出骰子。<br>
+                2. 系統會隨機跳出<b>健康醫學知識選擇題</b>。<br>
+                3. <b>答對題目</b>：即可前進骰子的<b>全額步數</b>！
+            </div>
+            <div class="nav-buttons">
+                <div></div><!-- 留空排版 -->
+                <button onclick="changePage(2)">下一頁 ➔</button>
+            </div>
+        </div>
+
+        <!-- 第二頁 -->
+        <div id="page-2" class="rule-page">
+            <div class="rule-icon">⚠️</div>
+            <div class="rule-title">惩罰與隔離機制</div>
+            <div class="rule-content">
+                如果不幸答錯，將會面臨嚴格的健康處罰：<br>
+                1. <b>答錯懲罰</b>：你的移動步數將會減半，且<b>無條件捨去</b>（例如：擲出 3 點，答錯只能走 1 步；擲出 1 點則走 0 步）。<br>
+                2. <b>隔離病房</b>：若累計<b>答錯滿 3 次</b>，玩家將會被立刻強制送入「隔離病房」，並停賽一輪！
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-secondary" onclick="changePage(1)">⬅ 上一頁</button>
+                <button onclick="changePage(3)">下一頁 ➔</button>
+            </div>
+        </div>
+
+        <!-- 第三頁 -->
+        <div id="page-3" class="rule-page">
+            <div class="rule-icon">👥</div>
+            <div class="rule-title">選擇玩家人數</div>
+            <div class="rule-content" style="text-align: center;">
+                本遊戲支援<b>同螢幕 2 ~ 4 人</b>輪流遊玩。<br>
+                準備好吸收健康知識、互相競爭了嗎？<br>
+                請選擇人數開始遊戲：
+            </div>
+            <div style="margin-top: 25px; display: flex; justify-content: center; gap: 10px;">
+                <button style="background:var(--chance);" onclick="startGame(2)">2 人參戰</button>
+                <button style="background:var(--shop);" onclick="startGame(3)">3 人參戰</button>
+                <button style="background:var(--hospital);" onclick="startGame(4)">4 人參戰</button>
+            </div>
+            <div class="nav-buttons" style="margin-top: 20px;">
+                <button class="btn-secondary" onclick="changePage(2)">⬅ 上一頁</button>
+                <div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要主控台 (預設隱藏) -->
+    <div id="control-panel" style="display: none;">
+        <h2 id="current-turn-display">輪到 玩家 1 的回合</h2>
+        <button id="roll-btn" onclick="takeTurn()">🎲 擲骰子</button>
+        <span id="dice-result" style="font-size: 22px; margin-left: 15px; font-weight: bold; color: var(--chance);"></span>
+        
+        <div id="players-status"></div>
+    </div>
+
+    <!-- 大富翁棋盤 (預設隱藏) -->
+    <div id="board" style="display: none;"></div>
+
+    <!-- 問答與事件彈窗 -->
+    <div id="game-modal" class="modal">
+        <div class="modal-content" id="modal-content-area"></div>
+    </div>
+
+<script>
+    // 醫學衛教健康題庫
+    const quizBank = [
+        { q: "為了預防高血壓，日常飲食應該堅持什麼原則？", a: ["高鹽高油增加風味", "低鹽少油清淡飲食", "多吃精緻甜食補充能量", "只吃肉類不吃蔬菜"], correct: 1 },
+        { q: "成人在正常靜止狀態下，建議每天喝水大約多少毫升(ml)？", a: ["500ml 夠喝就好", "1000ml 左右", "2000ml 左右", "5000ml 越多越好"], correct: 2 },
+        { q: "下列哪一種運動屬於最有效改善心肺功能的「有氧運動」？", a: ["快走或慢跑", "爆發力舉重", "百米衝刺短跑", "全力拔河比賽"], correct: 0 },
+        { q: "受傷有傷口時，為了促進組織修復與癒合，應適量補充哪種營養素？", a: ["飽和脂肪", "蛋白質與維生素C", "精緻碳水化合物", "高糖碳酸飲料"], correct: 1 },
+        { q: "為了預防近視與雙眼疲勞，用眼每30分鐘應該讓眼睛休息幾分鐘？", a: ["不需要休息，連續看也沒關係", "短暫眨眼 1 分鐘", "遠眺或閉眼休息 10 分鐘", "直接去睡覺 30 分鐘"], correct: 2 },
+        { q: "關於膳食纖維對身體的益處，下列敘述何者正確？", a: ["有助於腸胃蠕動、預防便秘", "只存在於深色肉類中", "人體吸收越多熱量越高", "日常飲食中吃越少越好"], correct: 0 }
+    ];
+
+    // 地圖16格佈局定義
+    const gridMapping = [
+        {id: 0, name: "🏁 起點中心", type: "start", r: 1, c: 1},
+        {id: 1, name: "❓ 健康問答", type: "quiz", r: 1, c: 2},
+        {id: 2, name: "❓ 健康問答", type: "quiz", r: 1, c: 3},
+        {id: 3, name: "❓ 健康問答", type: "quiz", r: 1, c: 4},
+        {id: 4, name: "🏥 隔離病房", type: "hospital", r: 1, c: 5},
+        {id: 5, name: "❓ 健康問答", type: "quiz", r: 2, c: 5},
+        {id: 6, name: "❓ 健康問答", type: "quiz", r: 3, c: 5},
+        {id: 7, name: "❓ 健康問答", type: "quiz", r: 4, c: 5},
+        {id: 8, name: "🎲 命運機會", type: "chance", r: 5, c: 5},
+        {id: 9, name: "❓ 健康問答", type: "quiz", r: 5, c: 4},
+        {id: 10, name: "❓ 健康問答", type: "quiz", r: 5, c: 3},
+        {id: 11, name: "❓ 健康問答", type: "quiz", r: 5, c: 2},
+        {id: 12, name: "💊 健康藥局", type: "shop", r: 5, c: 1},
+        {id: 13, name: "❓ 健康問答", type: "quiz", r: 4, c: 1},
+        {id: 14, name: "❓ 健康問答", type: "quiz", r: 3, c: 1},
+        {id: 15, name: "❓ 健康問答", type: "quiz", r: 2, c: 1}
+    ];
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    const playerColors = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"]; // 精緻色彩系統
+
+    // 切換規則說明分頁
+    function changePage(pageNum) {
+        document.querySelectorAll('.rule-page').forEach(page => {
+            page.classList.remove('active');
+        });
+        document.getElementById(`page-${pageNum}`).classList.add('active');
+    }
+
+    // 初始化建構棋盤 UI
+    function initBoardUI() {
+        const board = document.getElementById("board");
+        board.innerHTML = ""; 
+
+        gridMapping.forEach(cell => {
+            const cellDiv = document.createElement("div");
+            cellDiv.className = `cell cell-${cell.type}`;
+            cellDiv.style.gridRow = cell.r;
+            cellDiv.style.gridColumn = cell.c;
+            cellDiv.id = `cell-${cell.id}`;
+            cellDiv.innerHTML = `<div style="text-align:center;">${cell.name}</div><div class="tokens-container" id="tokens-${cell.id}"></div>`;
+            board.appendChild(cellDiv);
+        });
+
+        // 建立中央裝飾格
+        const centerDiv = document.createElement("div");
+        centerDiv.className = "center-space";
+        centerDiv.innerHTML = "<strong style='font-size:1.4rem; letter-spacing:1px;'>HEALTH<br>MONOPOLY</strong><span style='font-size:11px;color:#64748b;margin-top:5px;'>天天量血壓 隔離遠離我</span>";
+        board.appendChild(centerDiv);
+    }
+
+    // 開始遊戲
+    function startGame(playerCount) {
+        // 隱藏導覽，顯示遊戲區
+        document.getElementById("welcome-container").style.display = "none";
+        document.getElementById("control-panel").style.display = "block";
+        document.getElementById("board").style.display = "grid";
+
+        initBoardUI();
+
+        players = [];
+        for (let i = 0; i < playerCount; i++) {
+            players.push({
+                id: i + 1,
+                name: `玩家 ${i + 1}`,
+                color: playerColors[i],
+                position: 0,
+                wrongCount: 0,
+                inHospital: false,
+                score: 100 // 初始健康元氣分
+            });
+        }
+        currentPlayerIndex = 0;
+        updateUI();
+    }
+
+    // 更新 UI 狀態
+    function updateUI() {
+        // 1. 刷新棋子位置
+        for (let i = 0; i < 16; i++) {
+            document.getElementById(`tokens-${i}`).innerHTML = "";
+        }
+        players.forEach(p => {
+            const token = document.createElement("div");
+            token.className = "token";
+            token.style.backgroundColor = p.color;
+            token.innerText = `P${p.id}`;
+            document.getElementById(`tokens-${p.position}`).appendChild(token);
+        });
+
+        // 2. 刷新狀態計分卡
+        const statusContainer = document.getElementById("players-status");
+        statusContainer.innerHTML = "";
+        players.forEach((p, idx) => {
+            const card = document.createElement("div");
+            card.className = `status-card ${idx === currentPlayerIndex ? 'active' : ''}`;
+            if (idx === currentPlayerIndex) {
+                card.style.border = `2px solid ${p.color}`;
+                card.style.background = `${p.color}10`; // 微透明背景高亮
+            } else {
+                card.style.borderLeft = `4px solid ${p.color}`;
+            }
+            card.innerHTML = `
+                <strong style="color:${p.color}; font-size:1rem;">${p.name}</strong><br>
+                元氣分數: <b>${p.score}</b><br>
+                答錯次數: <span style="color:var(--danger); font-weight:bold;">${p.wrongCount}/3</span><br>
+                狀態狀態: ${p.inHospital ? '<span style="color:var(--hospital)">🏥 隔離中</span>' : '🟢 良好'}
+            `;
+            statusContainer.appendChild(card);
+        });
+
+        // 3. 設定回合文字
+        document.getElementById("current-turn-display").innerHTML = `輪到 <span style="color:${players[currentPlayerIndex].color}; font-weight:bold;">${players[currentPlayerIndex].name}</span> 的回合`;
+        document.getElementById("roll-btn").disabled = false;
+    }
+
+    // 進行回合邏輯
+    function takeTurn() {
+        document.getElementById("roll-btn").disabled = true;
+        const player = players[currentPlayerIndex];
+
+        // 判斷是否在隔離病房
+        if (player.inHospital) {
+            showHospitalModal(player);
+            return;
+        }
+
+        // 擲骰子
+        const dice = Math.floor(Math.random() * 6) + 1;
+        document.getElementById("dice-result").innerText = `🎲 擲出了 ${dice} 點！`;
+
+        setTimeout(() => {
+            showQuizModal(player, dice);
+        }, 600);
+    }
+
+    // 隔離病房出院提示視窗
+    function showHospitalModal(player) {
+        const modal = document.getElementById("game-modal");
+        const content = document.getElementById("modal-content-area");
+        
+        content.innerHTML = `
+            <h2 style="color:var(--hospital); margin-top:0;">🏥 隔離病房通知</h2>
+            <p style="font-size:1.1rem; color:#475569;"><strong>${player.name}</strong> 正在隔離療育中，本回合需停賽一輪。</p>
+            <p style="color:#64748b; font-size:0.9rem;">通過適當休息，你的免疫系統已重新開機！</p>
+            <button style="background:var(--hospital); width:100%; margin-top:15px;" onclick="releaseFromHospital()">滿血出院並換下家</button>
+        `;
+        modal.style.display = "flex";
+    }
+
+    function releaseFromHospital() {
+        const player = players[currentPlayerIndex];
+        player.inHospital = false;
+        player.wrongCount = 0; // 出院重置答錯次數
+        document.getElementById("game-modal").style.display = "none";
+        endTurn();
+    }
+
+    // 顯示健康問答視窗
+    function showQuizModal(player, dice) {
+        const modal = document.getElementById("game-modal");
+        const content = document.getElementById("modal-content-area");
+        
+        const randomQuiz = quizBank[Math.floor(Math.random() * quizBank.length)];
+
+        let optionsHtml = "";
+        randomQuiz.a.forEach((opt, index) => {
+            optionsHtml += `<button class="option-btn" onclick="handleAnswer(${index}, ${randomQuiz.correct}, ${dice})"><b>${index + 1}.</b> ${opt}</button>`;
+        });
+
+        content.innerHTML = `
+            <div style="background:${player.color}; color:white; padding:6px 12px; border-radius:30px; display:inline-block; font-size:0.85rem; font-weight:bold; margin-bottom:15px;">
+                ${player.name} 正在答題 (骰子：${dice}點)
+            </div>
+            <h3 style="margin-top:0; color:#0f172a; text-align:left; line-height:1.5;">${randomQuiz.q}</h3>
+            <div class="options-container">${optionsHtml}</div>
+        `;
+        modal.style.display = "flex";
+    }
+
+    // 判定答題與執行「無條件捨去」位移
+    function handleAnswer(selectedIndex, correctIndex, dice) {
+        document.getElementById("game-modal").style.display = "none";
+        const player = players[currentPlayerIndex];
+        let stepsMoved = 0;
+        let alertMessage = "";
+
+        if (selectedIndex === correctIndex) {
+            // 答對邏輯
+            stepsMoved = dice;
+            player.score += 20;
+            alertMessage = `🎉 恭喜答對！\n維持原步數前進 ${stepsMoved} 步，健康元氣分數 +20 點！`;
+        } else {
+            // 答錯邏輯：步數減半 + 無條件捨去
+            stepsMoved = Math.floor(dice / 2);
+            player.wrongCount += 1;
+            player.score -= 10;
+            alertMessage = `❌ 答錯了！\n步數減半且無條件捨去，只能前進 ${stepsMoved} 步（元氣 -10 點）。`;
+            
+            if (player.wrongCount >= 3) {
+                alertMessage += `\n\n🚨 答錯累計已達 3 次！防護網崩潰，你被救護車強制送往【🏥 隔離病房】！`;
+                player.position = 4; // 強制設定座標到第 4 格（隔離病房）
+                player.inHospital = true;
+                alert(alertMessage);
+                endTurn();
+                return;
+            }
+        }
+
+        // 棋子前進與環狀地圖取餘數
+        player.position = (player.position + stepsMoved) % 16;
+        
+        // 特殊格子觸發處理
+        const currentCell = gridMapping[player.position];
+        if (currentCell.type === "chance") {
+            player.score += 30;
+            alertMessage += `\n\n✨ 剛好在【🎲 命運機會】落腳：保持充足睡眠，獲得額外元氣 30 分！`;
+        } else if (currentCell.type === "shop") {
+            player.score += 10;
+            alertMessage += `\n\n🏪 剛好在【💊 健康藥局】落腳：補給了綜合維他命，元氣 +10！`;
+        } else if (currentCell.type === "start" && stepsMoved > 0) {
+            player.score += 50;
+            alertMessage += `\n\n🚩 通過或進駐【起點健康中心】，元氣大補血 +50！`;
+        }
+
+        alert(alertMessage);
+        endTurn();
+    }
+
+    // 結束回合換人
+    function endTurn() {
+        document.getElementById("dice-result").innerText = "";
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        updateUI();
+    }
+</script>
+</body>
+</html>
